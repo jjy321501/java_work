@@ -4,13 +4,19 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class TextEditor extends JFrame implements ActionListener {
 	public static final String COMMAND_NEW="new";
@@ -78,13 +84,71 @@ public class TextEditor extends JFrame implements ActionListener {
 		}else if(command.equals(COMMAND_OPEN)){
 			JFileChooser fc=new JFileChooser("c:/myFolder");
 			int result=fc.showOpenDialog(this);
+			FileNameExtensionFilter filter=
+					new FileNameExtensionFilter("텍스트파일","txt");
+			fc.setFileFilter(filter);
+			int result1=fc.showOpenDialog(this);
+			if(result1==JFileChooser.APPROVE_OPTION) {
+				File selectedFile=fc.getSelectedFile();
+				loadFromFile(selectedFile);
+			}
 		}else if(command.equals(COMMAND_SAVE)) {
 			JFileChooser fc=new JFileChooser("c:/myFolder");
 			int result=fc.showSaveDialog(this);
-			
+			if(result==JFileChooser.APPROVE_OPTION) {
+				File selectedFile=fc.getSelectedFile();
+				saveToFile(selectedFile);
+			}
 		}
 		
 	}
+	//선택된 파일에 저장된 문자열에 있는 내용을 TextArea에 출력하는 메소드
+	public void loadFromFile(File f) {
+		FileReader fr=null;
+		BufferedReader br=null;
+		try {
+			fr=new FileReader(f);
+			br=new BufferedReader(fr);
+				while(true) {		
+					String line=br.readLine();
+					if(line==null) {
+						break;
+					}
+					//읽어들인 문자열을 TextArea에 누적시키기
+					area.append(line+"\r\n");
+			}
+		
+		}catch(Exception e) {
+			e.printStackTrace();
+		}finally {
+			try {
+				fr.close();
+			}catch(Exception e) {}
+		}
+	}
+	
+	//TextArea에 작성된 문자열을 파일에 저장하는 메소드
+	public void saveToFile(File f) {
+		//1. TextArea 에 작성된 문자열을 읽어와서
+		String content=area.getText();
+		//2. 저장하기로 선택된 File 객체의 참조값을 얻어와서 텍스트를 저장한다.
+		FileWriter fw=null;
+		try {
+			fw=new FileWriter(f);
+			fw.write(content);
+			JOptionPane.showMessageDialog(this, "파일에 저장했습니다");
+		}catch(Exception e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(this, "파일 저장 실패");
+		}finally {
+			try {
+				fw.close();
+			}catch(Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
 	public static void main(String[] args) {
 		TextEditor te=new TextEditor("텍스트 편집기");
 		te.setBounds(100, 100, 500, 500);
