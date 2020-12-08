@@ -13,7 +13,7 @@ import java.sql.ResultSet;
  */
 public class MainClass01 {
 	public static void main(String[] args) {
-		//DB 연결 객체를 담을 지역변수
+		//DB 연결 객체를 담을 지역변수//Connction DB연동객체
 		Connection conn=null;
 		try {
 			//드라이버 로딩
@@ -28,7 +28,7 @@ public class MainClass01 {
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
-		
+		//PreparedStatement 
 		//Member 테이블의 내용을 select 해서 console  에 출력해보기
 		PreparedStatement pstmt=null;
 		ResultSet rs=null;
