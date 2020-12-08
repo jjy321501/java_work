@@ -24,7 +24,7 @@ public class MainClass03 {
 		}catch(Exception e){
 			e.printStackTrace();
 		}
-		
+		//sql문 대신 실행해주는 객체의 참조값을 담는 지역변수
 		PreparedStatement pstmt=null;
 		int flag=0;
 		try {
@@ -32,8 +32,10 @@ public class MainClass03 {
 					+" (num, name, addr)"
 					+" VALUES(member_seq.NEXTVAL,?,?)";
 			pstmt=conn.prepareStatement(sql);
+			// ? 에 순서대로 값을 바인딩 하기
 			pstmt.setString(1, name);
 			pstmt.setString(2, addr);
+			//완성된 sql문을 수행하고 변화된 row 의 갯수를 리턴받는다.
 			flag=pstmt.executeUpdate();
 			System.out.println("회원정보를 저장했습니다");
 		}catch(Exception e) {
