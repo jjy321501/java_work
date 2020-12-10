@@ -20,6 +20,16 @@ import test.util.DBConnect;
  *  - 필요한 모든 객체를 담을 지역변수를 선언하는 위치도 중요하다.
  *  - 필요한 객체를 생성하는 위치도 중요하다
  *  
+ *  Data Access Object (DAO)
+ *  
+ *  -DB에 INSERT ,UPDATE ,DELETE ,SELECT 작업을 수행하는 객체
+ *  -Table 마다 하나의 DAO 혹은 주제(카테고리) 마다 하나의 DAO 를 작성하게된다.
+ *  -DAO를 만들기 위해서는 DTO 클래스를 미리 설계하고 만들어야한다
+ *  -주제 (카테고리) 에 관련된 DAO 는 여러개의 Table 의 Join 이 일어날수도 있다.
+ *  -따라서 하나의 Table당 하나의DAO 는 아닌것이다
+ *  예를 들어 사원의 정보를 출력한다고 가정하면
+ *  emp, dept, salgrade 3개의 테이블의 join 이 일어날 수도 있다.
+ *  
  */
 public class MemberDao {
 	//모든 회원의 정보를 Select 해서 리턴하는 메소드
