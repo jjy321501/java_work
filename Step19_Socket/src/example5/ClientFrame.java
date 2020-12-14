@@ -4,6 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -15,18 +17,20 @@ import java.net.Socket;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-public class ClientFrame extends JFrame implements ActionListener{
+public class ClientFrame extends JFrame implements ActionListener, KeyListener{
 		//필드 
 		JTextField text_send;
 		Socket socket;
 		BufferedWriter bw;
 		BufferedReader br;
 		JTextArea ta;
+		private String chatName; //대화명저장할 필드
 		
 		//생성자
 		public ClientFrame(String title) {
@@ -52,8 +56,12 @@ public class ClientFrame extends JFrame implements ActionListener{
 			btn_send.addActionListener(this);
 			ta=new JTextArea();
 			JScrollPane scPane=new JScrollPane(ta,JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+			//스크롤 가능한 UI를 프레임의 중앙에 배치
 			add(scPane,BorderLayout.CENTER);
+			//오직 출력용도로만
 			ta.setEditable(false);
+			//JTextField 에 KeyListener 등록하기
+			text_send.addKeyListener(this);
 			//소켓접속하기
 			connect();
 			
@@ -71,9 +79,15 @@ public class ClientFrame extends JFrame implements ActionListener{
 		}
 		//Socket 서버에 접속하는 메소드
 		public void connect() {
+			//대화명 입력받아 필드에 저장하기
+			chatName=JOptionPane.showInputDialog(this, "대화명을 입력하세요");
+			if(chatName==null || chatName.equals("")) {
+				chatName="나천재";
+			}
+			
 			try {
 				//소켓객체
-				socket=new Socket("127.0.0.1",5000);
+				socket=new Socket("14.63.164.99",5000);
 				//서버에 문자열을 출력할 객체
 				bw=new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
 				//서버가 전송하는 문자열을 읽어들일 객체
@@ -94,13 +108,13 @@ public class ClientFrame extends JFrame implements ActionListener{
 			String msg=text_send.getText();
 			//BufferedWriter 객체를 이용해서 출력한다
 			try {
-				bw.write(msg);
+				bw.write(chatName+" : "+msg);
 				bw.newLine();
 				bw.flush();
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
-			//3.JTextField 에 입력한 
+			//3.JTextField 에 입력한 문자열 삭제
 			text_send.setText("");	
 		}
 		//서버에서 문자열이 전송되는지 지속적으로 대기하는 스레드 객체를 생성할 클래스설계
@@ -122,5 +136,38 @@ public class ClientFrame extends JFrame implements ActionListener{
 					}
 				}
 			}
+		}
+		@Override
+		public void keyPressed(KeyEvent e) {
+			//만일 엔터키를 눌렀다면 
+			if(e.getKeyCode()== KeyEvent.VK_ENTER) {
+				//JTextField 에 입력한 문자열 읽어와서
+				String msg=text_send.getText();
+				//BufferedWriter 객체를 이용해서 출력한다
+				try {
+					bw.write(chatName+" : "+msg);
+					bw.newLine();
+					bw.flush();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+				//3.JTextField 에 입력한 문자열 삭제
+				text_send.setText("");	
+			}
+			
+		}
+
+
+		@Override
+		public void keyReleased(KeyEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
+
+
+		@Override
+		public void keyTyped(KeyEvent e) {
+			// TODO Auto-generated method stub
+			
 		}
 }
