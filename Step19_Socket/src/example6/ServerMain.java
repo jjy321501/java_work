@@ -3,14 +3,15 @@ package example6;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class ServerMain {
 	//접속한 클라이언트를 응대하는 스레드 객체의 목록을 담을 필드
@@ -50,20 +51,44 @@ public class ServerMain {
 		private Socket socket; 
 		
 		private BufferedWriter bw;
-
+		//스레드가 응대하는 클라이언트의 대화명을 저장할 필드
+		private String chatName;
+		
+		
 		//생성자
 		public ServerThread(Socket socket) {
 			//생성자의 인자로 전달받은 Socket 객체의 참조값을 필드에 저장하기 
 			this.socket=socket;
 		}
 		//인자로 전달되는 문자열을 Socket 객체를 통해서 출력하는 메소드
-		public void broadcast(String msg) throws IOException {
-			//인자로 전달된 문자열을 필드에 저장된 BufferedWriter 객체의 참조값을 이용해서
-			//클라이언트에게 출력하기
-			bw.write(msg);
-			bw.newLine();
-			bw.flush();
+		public void sendMessage(String msg) throws IOException {
 			
+			//반복문 돌면서 모든 클라이언트에게 전송하기
+			for(ServerThread tmp:threadList) {
+				//인자로 전달된 문자열을 필드에 저장된 BufferedWriter 객체의 참조값을 이용해서
+				//클라이언트에게 출력하기
+				tmp.bw.write(msg);
+				tmp.bw.newLine();
+				tmp.bw.flush();
+			}
+		}
+		//참여자 목록을 구성해서 모든 클라이언트에게 출력해주는 메소드
+		public void sendChatNameList() {
+			JSONObject jsonObj=new JSONObject();
+			JSONArray jsonArr=new JSONArray();
+			//스레드 목록에서 대화명을 순서대로 참조해서 JSONArray에 누적시키기
+			for(ServerThread tmp:threadList) {
+				jsonArr.put(tmp.chatName);
+			}
+			//JSONObject 에 필요한 정보를 담는다
+			jsonObj.put("type", "members");
+			jsonObj.put("list", jsonArr);
+			
+			try {
+				sendMessage(jsonObj.toString());
+			}catch(IOException e) {
+				e.printStackTrace();
+			}
 		}
 
 		@Override
@@ -80,22 +105,48 @@ public class ServerMain {
 				while(true) {
 					//문자열 한줄이 전송될때 까지 블록킹 되는 메소드 
 					String line=br.readLine(); //클라이언트가 전송한 문자열을 읽어와서
-					//반복문 돌면서 모든 클라이언트에게 전송하기
-					for(ServerThread tmp:threadList) {
-						tmp.broadcast(line);
+					//누군가 (현재 스레드가 웅대하는 클라이언트)입장한거라면
+					JSONObject jsonObj=new JSONObject(line);
+					String type=jsonObj.getString("type");
+					if(type.equals("enter")) {
+						//대화명을 필드에 저장한다.
+						chatName=jsonObj.getString("name");
+						//모든 클라이언트에게 대화명 목록을 보내준다.
+						sendChatNameList();
 					}
-					
+					//클라이언트의 접속이 끈기면 
+					if(line==null) {
+						break; //반복문  while 을 탈출하도록 한다. 
+					}
 
+					
+					//서버가 특정 클라이언트에게 받은 문자열을 모든 클라이언트에게 보낸다
+					sendMessage(line);
 				}
+				
 			}catch(Exception e) {
 				e.printStackTrace();
+			}finally {
+				try {
+					//현재 스레드를 목록에서 제거하기
+					threadList.remove(this);
+					//누가 퇴장한다고 메시지를 보낸다
+					JSONObject jsonObj=new JSONObject();
+					jsonObj.put("type", "out");
+					jsonObj.put("name", this.chatName);
+					sendMessage(jsonObj.toString());
+					//참여자 목록 업데이트
+					sendChatNameList();
+					//소켓 닫는다
+					socket.close();
+				}catch(IOException e) {
+					e.printStackTrace();
+				}
 			}
-			//현재 여기서 실행순서가 넘어온 스레드의 참조값은? this 로 참조가능하다
 			
-			//오류가 나거나 접속종료된 스레드는 목록에서 제거 해야한다.
-			threadList.remove(this);
+			
 		}//run(0
 	}//class ServerThread
-}
+}//class ServerMain
 
 

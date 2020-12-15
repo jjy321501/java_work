@@ -9,20 +9,21 @@ import java.awt.event.KeyListener;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
+import java.util.Vector;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 /*
  * - 대화방에 현재 누가 참여하고 있는지 목록 출력하기
@@ -48,6 +49,7 @@ public class ClientFrame extends JFrame implements ActionListener, KeyListener{
 		BufferedReader br;
 		JTextArea ta;
 		String chatName; //대화명저장할 필드
+		JList<String> jList;
 		
 		//생성자
 		public ClientFrame(String title) {
@@ -58,7 +60,7 @@ public class ClientFrame extends JFrame implements ActionListener, KeyListener{
 			JPanel topPanel=new JPanel();
 			topPanel.setBackground(Color.blue);
 			//페널을 상단에 배치하기 
-			add(topPanel, BorderLayout.NORTH);
+			add(topPanel, BorderLayout.SOUTH);
 	
 			//아래 메소드에서 필요한값을 필드에 저장하기 
 			tf=new JTextField(20);
@@ -80,6 +82,23 @@ public class ClientFrame extends JFrame implements ActionListener, KeyListener{
 			ta.setEditable(false);
 			//JTextField 에 KeyListener 등록하기
 			tf.addKeyListener(this);
+			
+			//참여자 목록을 출력할 준비
+			jList=new JList<>();
+			jList.setBackground(Color.green);
+			
+			
+			JPanel rightPanel=new JPanel();
+			rightPanel.add(jList);
+			add(rightPanel,BorderLayout.EAST);
+			
+			Vector<String> enterList=new Vector<>();
+			enterList.add("참여자 목록");
+			enterList.add("김구라");
+			enterList.add("해골");
+			
+			
+			
 			//소켓접속하기
 			connect();
 			
@@ -143,8 +162,44 @@ public class ClientFrame extends JFrame implements ActionListener, KeyListener{
 					try {
 						//대기하다가 문자열이 도착하면 메소드가 리턴한다
 						String line=br.readLine();
-						//도착된 메시지를 JTextArea에 개행기호와 함께 추가
-						ta.append(line+"\r\n");
+						//JSON 문자열을 이용해서 JSONObject 객체생성
+						JSONObject jsonObj=new JSONObject(line);
+						//어떤종류인지 읽어와본다
+						String type=jsonObj.getString("type");
+						if(type.equals("enter")) {
+							String name=jsonObj.getString("name");
+							ta.append("[ "+name+" ]님이 입장하셨습니다");
+							ta.append("\r\n");
+						}else if(type.equals("out")) {
+							String name=jsonObj.getString("name");
+							ta.append("[ "+name+" ]님이 퇴장하셨습니다");
+						}else if(type.equals("msg")) {
+							String name=jsonObj.getString("name");
+							String content=jsonObj.getString("content");
+							ta.append(name+" : "+content);
+							ta.append("\r\n");
+						}else if(type.equals("members")){
+							//"list" 라는 키값으로 저장된 JSONArray 객체얻어오기
+							JSONArray jsonArr=jsonObj.getJSONArray("list");
+							//참여자 목록을 저장할 Vector
+							Vector<String> list=new Vector<>();
+							for(int i=0; i<jsonArr.length(); i++) {
+								//JSONArray 에서 i번째 참여자 명단을 얻어와서
+								String tmp=jsonArr.getString(i);
+								//Vector 에 누적시키기
+								list.add(tmp);
+							}
+							//반복문 돌고 난후 참여자 목록 Vector 를 JList 에 연결하기
+							jList.setListData(list);
+						}else if(type.equals("out")) {
+							String name=jsonObj.getString("name");
+							ta.append("# "+name+" # 님이 되장했습니다.");
+							ta.append("\r\n");
+						}
+						
+						if(line==null) {//서버와 접속이 끊기면
+							break; //while 문탈출
+						}
 						//출력할 문서의 높이
 						int height=ta.getDocument().getLength();
 						//높이만큼 JTextArea 를 스크롤 시켜서 가장아래에 있는 문자열이 보이게
